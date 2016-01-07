@@ -4,7 +4,7 @@ NAME="lognotify"
 
 .PHONY: deps test all clean new_target install
 
-all: deps new_target
+all: deps test new_target
 	@go build -o ${TARGETDIR}/${NAME}
 	@cp res/* ${TARGETDIR}
 
