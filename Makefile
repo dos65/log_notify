@@ -2,9 +2,9 @@ TARGETDIR="build"
 RESDIR="res"
 NAME="lognotify"
 
-.PHONY: deps test all clean new_target install
+.PHONY: deps test all clean new_target install format
 
-all: deps test new_target
+all: format deps test new_target
 	@go build -o ${TARGETDIR}/${NAME}
 	@cp res/* ${TARGETDIR}
 
@@ -20,6 +20,11 @@ new_target:
 test: deps
 	@echo "* Running tests"
 	@go test -v
+	@echo "* ... Done"
+
+format:
+	@echo "* Formatting"
+	@go fmt
 	@echo "* ... Done"
 
 install:

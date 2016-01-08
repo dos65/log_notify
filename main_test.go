@@ -11,7 +11,7 @@ type MockReader struct {
 	text string
 }
 
-func (r *MockReader) Read(buffer []byte) (int , error) {
+func (r *MockReader) Read(buffer []byte) (int, error) {
 	bytes := []byte(r.text)
 	n := len(bytes)
 	copy(buffer, bytes)

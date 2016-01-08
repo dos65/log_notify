@@ -1,8 +1,8 @@
 package main
 
 import (
-	"gopkg.in/alecthomas/kingpin.v2"
 	"github.com/kardianos/osext"
+	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 )
 
@@ -16,9 +16,9 @@ func main() {
 
 	var logProcessor *LogProcessor
 	if *filePath == "" {
-        logProcessor = NewStdinLogProcessor(*expr)
+		logProcessor = NewStdinLogProcessor(*expr)
 	} else {
-        logProcessor = NewFileLogProcessor(*filePath, *expr)
+		logProcessor = NewFileLogProcessor(*filePath, *expr)
 	}
 	path, err := osext.ExecutableFolder()
 	if err != nil {

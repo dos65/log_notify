@@ -14,17 +14,17 @@ import (
 )
 
 const (
-    sleepTime = 1000
+	sleepTime = 1000
 	bytesRead = 512
 )
 
 type LogProcessor struct {
-	path string
+	path       string
 	expression string
-	reader io.Reader
-	inotify bool
-    handler Handler
-	buffer []byte
+	reader     io.Reader
+	inotify    bool
+	handler    Handler
+	buffer     []byte
 }
 
 func createLogProcessor() *LogProcessor {
@@ -32,8 +32,8 @@ func createLogProcessor() *LogProcessor {
 	return &LogProcessor{buffer: buffer}
 }
 
-func NewFileLogProcessor (path string, expression string) *LogProcessor {
-    absPath := absPath(path)
+func NewFileLogProcessor(path string, expression string) *LogProcessor {
+	absPath := absPath(path)
 	logProcessor := createLogProcessor()
 	logProcessor.path = absPath
 	logProcessor.expression = expression
@@ -42,14 +42,14 @@ func NewFileLogProcessor (path string, expression string) *LogProcessor {
 	return logProcessor
 }
 
-func NewStdinLogProcessor ( expression string) *LogProcessor {
+func NewStdinLogProcessor(expression string) *LogProcessor {
 	logProcessor := createLogProcessor()
 	logProcessor.expression = expression
 	logProcessor.reader = os.Stdin
 	return logProcessor
 }
 
-func (l * LogProcessor) SetHandler(handler Handler) {
+func (l *LogProcessor) SetHandler(handler Handler) {
 	l.handler = handler
 }
 
@@ -62,71 +62,71 @@ func absPath(path string) string {
 }
 
 func createReader(path string) io.Reader {
-    file, err := os.Open(path)
-    if err != nil {
-        log.Fatal(err)
-    }
-    file.Seek(0, 2)
-    return file
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	file.Seek(0, 2)
+	return file
 }
 
 func (l *LogProcessor) start() {
-    if l.inotify {
-        l.startInotify()
-    } else {
-        l.startDefault()
-    }
+	if l.inotify {
+		l.startInotify()
+	} else {
+		l.startDefault()
+	}
 }
 
 func (l *LogProcessor) startInotify() {
-    watcher, err := inotify.NewWatcher()
-    if err != nil {
-        log.Fatal(err)
-    }
-    err = watcher.Watch(l.path)
-    if err != nil {
-        log.Fatal(err)
-    }
-    for {
-        select {
-        case event := <-watcher.Event:
-            if event.Mask == inotify.IN_MODIFY {
-                l.read()
-            }
-        case err := <-watcher.Error:
-            log.Fatal(err)
-        }
-    }
+	watcher, err := inotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = watcher.Watch(l.path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		select {
+		case event := <-watcher.Event:
+			if event.Mask == inotify.IN_MODIFY {
+				l.read()
+			}
+		case err := <-watcher.Error:
+			log.Fatal(err)
+		}
+	}
 }
 
 func (l *LogProcessor) startDefault() {
-    for {
-        l.read()
-        time.Sleep(1000)
-    }
+	for {
+		l.read()
+		time.Sleep(1000)
+	}
 
 }
 
 func (l *LogProcessor) read() string {
-    for {
-        n, err := l.reader.Read(l.buffer)
-        if err != nil {
-            if err == io.EOF {
-                return ""
-            }
-            log.Fatal(err)
-        }
+	for {
+		n, err := l.reader.Read(l.buffer)
+		if err != nil {
+			if err == io.EOF {
+				return ""
+			}
+			log.Fatal(err)
+		}
 
-        if n > 0 {
+		if n > 0 {
 			text := string(l.buffer[:n])
 			if l.expression != "" {
 				l.processLogs(text)
 			}
 			return text
-        } else {
-            return ""
-        }
-    }
+		} else {
+			return ""
+		}
+	}
 }
 
 func (l *LogProcessor) processLogs(text string) {
