@@ -53,7 +53,6 @@ func TestNotify(t *testing.T) {
 	logProcessor.expression = "Hello"
 	logProcessor.handler = handler
 
-	text := logProcessor.read()
-	t.Log("text:" + text)
+	logProcessor.read()
 	assert.True(t, handler.handled)
 }
