@@ -1,24 +1,57 @@
 package main
 
 import (
+	"github.com/kardianos/osext"
 	"log"
 	"os/exec"
 	"path/filepath"
+	"sync"
+	"time"
 )
 
-type Notification func(string)
-
-func UINotification(text string) Notification {
-	return func(text string) {
-		err := exec.Command("notify-send", "lognotify", "\""+text+"\" handled").Run()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+type Notification interface {
+	Notify(string)
 }
 
-func SoundNotification(path string) Notification {
-	return func(text string) {
-		exec.Command("ogg123", filepath.Join(path, "ring.ogg")).Run()
+type CommandNotification struct {
+	name        string
+	lockTimeout time.Duration
+	getArgs     func(string) []string
+	sync.Mutex
+}
+
+func (cn *CommandNotification) Notify(text string) {
+	cn.Lock()
+	err := exec.Command(cn.name, cn.getArgs(text)...).Run()
+	if err != nil {
+		log.Fatal(err)
 	}
+	if cn.lockTimeout > 0 {
+		time.Sleep(cn.lockTimeout)
+	}
+	cn.Unlock()
+}
+
+func UINotification() Notification {
+	getArgs := func(text string) []string {
+		return []string{"lognotify", "\"" + text + "\" handled"}
+	}
+	return &CommandNotification{
+		name:        "notify-send",
+		lockTimeout: 9000,
+		getArgs:     getArgs}
+
+}
+
+func SoundNotification() Notification {
+	path, err := osext.ExecutableFolder()
+	if err != nil {
+		log.Fatal(err)
+	}
+	oggPath := filepath.Join(path, "ring.ogg")
+	return &CommandNotification{
+		name: "ogg123",
+		getArgs: func(text string) []string {
+			return []string{oggPath}
+		}}
 }

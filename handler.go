@@ -19,6 +19,6 @@ func (h *NotifyHandler) Add(notification Notification) {
 
 func (h *NotifyHandler) Handle(text string) {
 	for _, notification := range h.notifications {
-		go notification(text)
+		go notification.Notify(text)
 	}
 }

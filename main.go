@@ -1,9 +1,7 @@
 package main
 
 import (
-	"github.com/kardianos/osext"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"log"
 )
 
 var (
@@ -20,14 +18,10 @@ func main() {
 	} else {
 		logProcessor = NewFileLogProcessor(*filePath, *expr)
 	}
-	path, err := osext.ExecutableFolder()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	handler := NewHandler()
-	handler.Add(SoundNotification(path))
-	handler.Add(UINotification(*expr))
+	handler.Add(SoundNotification())
+	handler.Add(UINotification())
 
 	logProcessor.SetHandler(handler)
 	logProcessor.start()
