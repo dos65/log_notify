@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -12,11 +13,11 @@ var (
 func main() {
 	kingpin.Parse()
 
-	var logProcessor *LogProcessor
+	var logProcessor *LogReader
 	if *filePath == "" {
-		logProcessor = NewStdinLogProcessor(*expr)
+		logProcessor = NewStdinLogReader(*expr)
 	} else {
-		logProcessor = NewFileLogProcessor(*filePath, *expr)
+		logProcessor = NewFileLogReader(*filePath, *expr)
 	}
 
 	handler := NewHandler()
@@ -24,5 +25,8 @@ func main() {
 	handler.Add(UINotification())
 
 	logProcessor.SetHandler(handler)
-	logProcessor.start()
+	go logProcessor.start()
+	for output := range logProcessor.out {
+		fmt.Print(output)
+	}
 }

@@ -22,14 +22,14 @@ func TestRead(t *testing.T) {
 	mockReader := &MockReader{}
 	mockReader.text = "test"
 
-	logProcessor := createLogProcessor()
-	logProcessor.reader = mockReader
+	logReader := createLogReader()
+	logReader.reader = mockReader
 
-	text := logProcessor.read()
+	text := logReader.read()
 	assert.Equal(t, "test", text)
 
 	mockReader.text = ""
-	text = logProcessor.read()
+	text = logReader.read()
 	assert.Equal(t, "", text)
 }
 
@@ -43,16 +43,12 @@ func (h *MockHandler) Handle(text string) {
 }
 
 func TestNotify(t *testing.T) {
-	mockReader := &MockReader{}
-	mockReader.text = "test Hello"
-
 	handler := &MockHandler{}
 
-	logProcessor := createLogProcessor()
-	logProcessor.reader = mockReader
-	logProcessor.expression = "Hello"
-	logProcessor.handler = handler
+	logReader := createLogReader()
+	logReader.expression = "Hello"
+	logReader.handler = handler
 
-	logProcessor.read()
+	logReader.processLogs("test Hello")
 	assert.True(t, handler.handled)
 }

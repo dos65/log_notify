@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/mgutz/ansi"
 	"golang.org/x/exp/inotify"
 	"io"
@@ -18,38 +17,40 @@ const (
 	bytesRead = 512
 )
 
-type LogProcessor struct {
+type LogReader struct {
 	path       string
 	expression string
 	reader     io.Reader
 	inotify    bool
 	handler    Handler
 	buffer     []byte
+	out        chan string
 }
 
-func createLogProcessor() *LogProcessor {
+func createLogReader() *LogReader {
 	buffer := make([]byte, bytesRead)
-	return &LogProcessor{buffer: buffer}
+	out := make(chan string)
+	return &LogReader{buffer: buffer, out: out}
 }
 
-func NewFileLogProcessor(path string, expression string) *LogProcessor {
+func NewFileLogReader(path string, expression string) *LogReader {
 	absPath := absPath(path)
-	logProcessor := createLogProcessor()
-	logProcessor.path = absPath
-	logProcessor.expression = expression
-	logProcessor.inotify = true
-	logProcessor.reader = createReader(absPath)
-	return logProcessor
+	logReader := createLogReader()
+	logReader.path = absPath
+	logReader.expression = expression
+	logReader.inotify = true
+	logReader.reader = createReader(absPath)
+	return logReader
 }
 
-func NewStdinLogProcessor(expression string) *LogProcessor {
-	logProcessor := createLogProcessor()
+func NewStdinLogReader(expression string) *LogReader {
+	logProcessor := createLogReader()
 	logProcessor.expression = expression
 	logProcessor.reader = os.Stdin
 	return logProcessor
 }
 
-func (l *LogProcessor) SetHandler(handler Handler) {
+func (l *LogReader) SetHandler(handler Handler) {
 	l.handler = handler
 }
 
@@ -70,7 +71,7 @@ func createReader(path string) io.Reader {
 	return file
 }
 
-func (l *LogProcessor) start() {
+func (l *LogReader) start() {
 	if l.inotify {
 		l.startInotify()
 	} else {
@@ -78,7 +79,7 @@ func (l *LogProcessor) start() {
 	}
 }
 
-func (l *LogProcessor) startInotify() {
+func (l *LogReader) startInotify() {
 	watcher, err := inotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -91,7 +92,7 @@ func (l *LogProcessor) startInotify() {
 		select {
 		case event := <-watcher.Event:
 			if event.Mask == inotify.IN_MODIFY {
-				l.read()
+				l.tryRead()
 			}
 		case err := <-watcher.Error:
 			log.Fatal(err)
@@ -99,15 +100,23 @@ func (l *LogProcessor) startInotify() {
 	}
 }
 
-func (l *LogProcessor) startDefault() {
+func (l *LogReader) startDefault() {
 	for {
-		l.read()
+		l.tryRead()
 		time.Sleep(1000)
 	}
-
 }
 
-func (l *LogProcessor) read() string {
+func (l *LogReader) tryRead() {
+	text := l.read()
+	if text == "" {
+		return
+	}
+	text = l.processLogs(text)
+	l.out <- text
+}
+
+func (l *LogReader) read() string {
 	for {
 		n, err := l.reader.Read(l.buffer)
 		if err != nil {
@@ -118,18 +127,14 @@ func (l *LogProcessor) read() string {
 		}
 
 		if n > 0 {
-			text := string(l.buffer[:n])
-			if l.expression != "" {
-				l.processLogs(text)
-			}
-			return text
+			return string(l.buffer[:n])
 		} else {
 			return ""
 		}
 	}
 }
 
-func (l *LogProcessor) processLogs(text string) {
+func (l *LogReader) processLogs(text string) string {
 	lines := strings.Split(text, "\n")
 	for i, line := range lines {
 		match, _ := regexp.MatchString(l.expression, line)
@@ -138,5 +143,5 @@ func (l *LogProcessor) processLogs(text string) {
 			lines[i] = ansi.Color(line, "red")
 		}
 	}
-	fmt.Print(strings.Join(lines, "\n"))
+	return strings.Join(lines, "\n")
 }
