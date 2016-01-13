@@ -33,25 +33,36 @@ func (cn *CommandNotification) Notify(text string) {
 }
 
 func UINotification() Notification {
+	notifySend := "notify-send"
+	checkCmd(notifySend)
 	getArgs := func(text string) []string {
 		return []string{"lognotify", "\"" + text + "\" handled"}
 	}
 	return &CommandNotification{
-		name:        "notify-send",
+		name:        notifySend,
 		lockTimeout: 9000,
 		getArgs:     getArgs}
 
 }
 
 func SoundNotification() Notification {
+	ogg := "ogg123"
+	checkCmd(ogg)
 	path, err := osext.ExecutableFolder()
 	if err != nil {
 		log.Fatal(err)
 	}
 	oggPath := filepath.Join(path, "ring.ogg")
 	return &CommandNotification{
-		name: "ogg123",
+		name: ogg,
 		getArgs: func(text string) []string {
 			return []string{oggPath}
 		}}
+}
+
+func checkCmd(name string) {
+	err := exec.Command("which", name).Run()
+	if err != nil {
+		log.Fatalf("Can not find %s.\nSee https://github.com/dos65/lognotify#install", name)
+	}
 }

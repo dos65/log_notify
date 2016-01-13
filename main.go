@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
+	"log"
 )
 
 var (
@@ -11,6 +12,7 @@ var (
 )
 
 func main() {
+	log.SetFlags(0)
 	kingpin.Parse()
 
 	var logProcessor *LogReader
